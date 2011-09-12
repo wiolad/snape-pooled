@@ -251,6 +251,16 @@ let fields line =
     [|get 0;get 1;get 2; get 3;get 4;get 5|]
 let parse_pileup pileup qualities =
 	let table = Array.init 8 (fun e -> 0) in
+	(* table contains the following fields:
+	0 number (#) of '.' or ',' characters (reference)
+	1 #A
+	2 #C
+	3 #G
+	4 #T	
+	5 #N
+	6 sum of the quality codes for reference symbols
+	7 sum of quality codes for non reference symbols
+	*)
 	let le = String.length pileup in
 	if (le = 0) then raise (Continue "empty pileup");
 	let i = ref 0 and pos = ref 0 in
