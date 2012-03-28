@@ -1,4 +1,4 @@
-<TeXmacs|1.0.7.2>
+<TeXmacs|1.0.7.3>
 
 <style|tmweb>
 
@@ -20,7 +20,7 @@
 
   The input data must be formatted according to the pileup specifications
   [see <with|color|blue|<with|font-family|tt|http://samtools.sourceforge.net/pileup.shtml>>],
-  i.e. the following fields must be present:
+  <em|i.e.> the following fields must be present:
 
   \;
 
@@ -29,8 +29,10 @@
 
     <item>an integer, specifying the position along the chromosome
 
-    <item>the reference nucleotide, i.e. the content of the reference genome
-    for the population at that position of the given chromosome
+    <item>the reference nucleotide, <em|i.e.> the content of the reference
+    genome for the population at that position of the given chromosome
+
+    <item>the coverage, that is the number of bases in the pileup
 
     <item>the pileup, a list of all the nucleotides aligned with the position
     specified in (1) and (2). Each nucleotide comes from a different read,

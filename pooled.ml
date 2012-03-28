@@ -170,16 +170,16 @@ let pk k n er ea  =
 	and ea = if (ea>0.5) then 0.5 else ea in 
 	let pa = (float_of_int k) /. (float_of_int n)
         in 
-        let rho1    = er *. (1.0 -. 2.0*.ea)/.(1.0 -. ea -. er) in 
-        let alpha1  = ea*.(1.0-.2.0*.er)/.(1.0 -. ea -. er)
+        let rho1    = er *. (1.0 -. 2.0*.ea)/.(1.0 -. ea -. er) and 
+        alpha1  = ea*.(1.0-.2.0*.er)/.(1.0 -. ea -. er)
         in
          let res = ((1.0 -. rho1) *. pa +. alpha1 *. (1.0 -. pa)) 
         in if (res > 1.0) then raise (Continue("internal:invalid pk er:"^(string_of_float er)^" ea:"^(string_of_float ea))) else res ;;      
 (** *)
 let prob_k n k f =
-  (* if (n<=20) then *)
-    binomial_table.(n).(k) *. f ** (float_of_int k) *. (1.0 -. f) ** (float_of_int (n-k)) (*  else 
-	exp	(logbico n k +. logpow (float_of_int k) f +. logpow (float_of_int (n - k)) (1.0 -. f))  *)
+   if (n<=20) then 
+    binomial_table.(n).(k) *. f ** (float_of_int k) *. (1.0 -. f) ** (float_of_int (n-k))   else 
+	exp	(logbico n k +. logpow (float_of_int k) f +. logpow (float_of_int (n - k)) (1.0 -. f))  
 ;;
 let prob_k = memoize3 prob_k
 ;; 
@@ -229,7 +229,7 @@ let prior_folded_flat theta f =
 let expected_value p f =
     let lp = Array.length p 
     and lf = Array.length f in
-    (*assert (lp=lf);*)
+    assert (lp=lf);
 	let ef = ref 0.0 in
     for i = 0 to lp -1 do
 		ef:=!ef +. p.(i) *. f.(i)
