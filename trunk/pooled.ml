@@ -315,7 +315,7 @@ let print_spectrum div ps_normalized  =
 let splash () =
   Printf.fprintf stderr "***************************************************************\n%!"; 
   Printf.fprintf stderr "snape-pooled : a method for calling SNPs in pooled samples\n%!";
-  Printf.fprintf stderr "$Date: 2011-08-21 15:50:44 +0200 (Sun, 21 Aug 2011) $ $Rev$\n%!";
+  Printf.fprintf stderr "$Date$ $Rev$\n%!";
   Printf.fprintf stderr "***************************************************************\n%!"
 ;;
 let nchr = ref 0
