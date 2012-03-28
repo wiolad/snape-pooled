@@ -28,6 +28,7 @@ exception Next
 (***************************
 		maths 
 ****************************)
+(*binomail table up to n = 20 *)
 let binomial_table= 
 [|[|1.|]; [|1.; 1.|]; [|1.; 2.; 1.|]; [|1.; 3.; 3.; 1.|]; [|1.; 4.; 6.; 4.; 
   1.|]; [|1.; 5.; 10.; 10.; 5.; 1.|]; [|1.; 6.; 15.; 20.; 15.; 6.; 
@@ -314,7 +315,7 @@ let print_spectrum div ps_normalized  =
 let splash () =
   Printf.fprintf stderr "***************************************************************\n%!"; 
   Printf.fprintf stderr "snape-pooled : a method for calling SNPs in pooled samples\n%!";
-  Printf.fprintf stderr "$Date: 2011-08-21 15:50:44 +0200 (Sun, 21 Aug 2011) $ $Rev: 220 $\n%!";
+  Printf.fprintf stderr "$Date: 2011-08-21 15:50:44 +0200 (Sun, 21 Aug 2011) $ $Rev$\n%!";
   Printf.fprintf stderr "***************************************************************\n%!"
 ;;
 let nchr = ref 0
