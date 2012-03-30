@@ -1,1 +1,6 @@
-chr14	100	8	A	....,,,G,	ooooooooo
+chr14	100	A	9	....,,,G,	ooooooooo
+seq1m	158	t	7	....GGG	7777;;;
+seq1m	353	c	6	.....A	77777$
+seq1m	353	c	6	.....A	77777.
+seq1m	353	c	6	.....A	777770
+seq1m	353	c	6	.....A	777777

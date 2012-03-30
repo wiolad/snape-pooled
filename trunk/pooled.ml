@@ -1,8 +1,6 @@
 (*
 Copyright (C) 2011 by Emanuele Raineri
-
 *)
-
 open Arg
 exception Continue of string
 exception Next
@@ -35,7 +33,10 @@ let binomial_table=
   1.|]
 |]
 ;;
-let epsilon = sqrt epsilon_float;;
+let epsilon = sqrt epsilon_float
+;;
+let isnan (x : float) = x <> x
+;;
 (**
     memoizes any function of one argument
     @param f 'a->'b
@@ -90,7 +91,8 @@ let gammaln z =
         y:=!y +. 1.0;
         ser := !ser +. cof.(j) /. !y 
     done;
--. tmp +. log(2.5066282746310005*. !ser /. x);;
+-. tmp +. log(2.5066282746310005*. !ser /. x)
+;;
 (** ln n! 
     @param n int
     @return ln(n!)
@@ -114,7 +116,10 @@ let logbico n k = factln n -. factln k -. factln ( n - k)
 ;;
 let logbico  = memoize2 logbico
 ;;
-let logpow e base = if ( e= 0.0 && base = 0.0 ) then 0.0 else e *. log base
+let logpow e base = 
+	if ( e = 0.0 && base = 0.0 ) then 0.0 
+	else if (base = 0.) then 0. 
+	else e *. log base
 ;;
 (** 
 binomial probability distribution
@@ -125,10 +130,10 @@ binomial probability distribution
   @return float (n choose k) p^k q^(n-k) 
 *)
 let pbico n k p q =
-	let lnpbico = logbico n k  
-  (* ( factln n -. factln k -. factln ( n - k) )*) +. 
+	let lnpbico = logbico n k  +. 
   logpow (float_of_int k) p +. logpow (float_of_int n -. float_of_int k) q in
-	exp lnpbico;;						
+	exp lnpbico
+;;						
 (** 
     from ascii code to epsilon
     @param c int
@@ -152,12 +157,14 @@ let pk k n er ea  =
 	and ea = if (ea>0.5) then 0.5 else ea in 
 	let pa = (float_of_int k) /. (float_of_int n)
         in 
-        let rho1    = er *. (1.0 -. 2.0*.ea)/.(1.0 -. ea -. er) and 
-        alpha1  = ea*.(1.0-.2.0*.er)/.(1.0 -. ea -. er)
+        let rho1    = er *. (1.0 -. 2.0 *. ea)   /. (1.0 -. ea -. er) 
+		and alpha1  = ea *. (1.0 -. 2.0 *. er)   /. (1.0 -. ea -. er)
         in
-         let res = ((1.0 -. rho1) *. pa +. alpha1 *. (1.0 -. pa)) 
-        in if (res > 1.0) then raise (Continue("internal:invalid pk er:"^(string_of_float er)^" ea:"^(string_of_float ea))) else res ;;      
-(** *)
+        let res = ((1.0 -. rho1) *. pa +. alpha1 *. (1.0 -. pa)) 
+        in if (res > 1.0 ) then 
+		raise (Continue("internal:invalid pk er:"^(string_of_float er)^" ea:"^(string_of_float ea))) 
+		else res
+;;      
 let prob_k n k f =
    if (n<=20) then 
     binomial_table.(n).(k) *. f ** (float_of_int k) *. (1.0 -. f) ** (float_of_int (n-k))   else 
@@ -173,9 +180,8 @@ let p_na_given_f na f n g  er ea =
     for k = 0 to n  do
     let pk = pk k n er ea in
       sum:=!sum +. (pbico g na pk (1.0 -. pk)) *. (prob_k n k f); 
-      (*Printf.fprintf stdout "sum:%g pbico %f prob %f pk %f\n" !sum (pbico g na pk (1.0 -. pk)) (prob_k n k f) pk*)
     done;
-  !sum
+	!sum
 ;;  
 (* NB: I know that below I am using a sloppy way of comparing
 float numbers. It happens to work in this specific occasion, though*)
