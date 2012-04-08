@@ -7,7 +7,7 @@ exception Next
 (***************************
 		maths 
 ****************************)
-(*binomail table up to n = 20 *)
+(*binomial table up to n = 20 *)
 let binomial_table= 
 [|[|1.|]; [|1.; 1.|]; [|1.; 2.; 1.|]; [|1.; 3.; 3.; 1.|]; [|1.; 4.; 6.; 4.; 
   1.|]; [|1.; 5.; 10.; 10.; 5.; 1.|]; [|1.; 6.; 15.; 20.; 15.; 6.; 
@@ -30,8 +30,7 @@ let binomial_table=
   50388.; 27132.; 11628.; 3876.; 969.; 171.; 19.; 1.|]; [|1.; 20.; 190.;
    1140.; 4845.; 15504.; 38760.; 77520.; 125970.; 167960.; 184756.; 
   167960.; 125970.; 77520.; 38760.; 15504.; 4845.; 1140.; 190.; 20.; 
-  1.|]
-|]
+  1.|]|]
 ;;
 let epsilon = sqrt epsilon_float
 ;;
@@ -63,22 +62,7 @@ let memoize2 f =
         (Hashtbl.add t2 (n,k) res;
         res) 
 ;; 
-let memoize3 f =
-    let t3 = Hashtbl.create 1000
-    in fun n k p ->
-    try  Hashtbl.find t3 (n,k,p)
-   with  Not_found -> 
-        (* Printf.fprintf stdout  "new3%!"; *)
-        let res = f n k p in
-        (Hashtbl.add t3 (n,k,p) res;
-        res) 
-;; 
-(**
-    logarithm of gamma function
-    @param z float
-    @return ln |gamma (z)| 
-*)
-let gammaln z =
+let gammaln (z : float) =
     let cof =[|76.18009172947146;-86.50532032941677;
               24.01409824083091;-1.231739572450155;
               0.1208650973866179e-2;-0.5395239384953e-5|]
@@ -91,101 +75,70 @@ let gammaln z =
         y:=!y +. 1.0;
         ser := !ser +. cof.(j) /. !y 
     done;
--. tmp +. log(2.5066282746310005*. !ser /. x)
+-. tmp +. log(2.5066282746310005*. !ser /. x) 
 ;;
-(** ln n! 
-    @param n int
-    @return ln(n!)
-*)
-(** ln n!  *)
 let factln  =
-    memoize (fun n -> gammaln (float_of_int n +. 1.0)) 
+    memoize (fun (n:int) -> gammaln (float_of_int n +. 1.0)) 
 ;;    
-(** 
-binomial coefficient n k 
-    @param n int
-    @param k int
-    @return n choose k
-*)
-let bico n k =
-    int_of_float (floor (0.5 +. exp ( factln n -. factln k -. factln ( n - k) )))
-;;
-let bico = memoize2 bico
-;;
 let logbico n k = factln n -. factln k -. factln ( n - k)
 ;;
 let logbico  = memoize2 logbico
 ;;
-let logpow e base = 
-	if ( e = 0.0 && base = 0.0 ) then 0.0 
-	else if (base = 0.) then 0. 
-	else e *. log base
+let logpow (e:float) (base:float) = 
+	(*if ( e = 0.0 && base = 0.0 ) then 0.0 
+	else*) if (base = 0.) then 0. 
+	else e *. log base  
 ;;
-(** 
-binomial probability distribution
-  @param n int
-  @param k int
-  @param p float
-  @param q float
-  @return float (n choose k) p^k q^(n-k) 
-*)
-let pbico n k p q =
-	let lnpbico = logbico n k  +. 
-  logpow (float_of_int k) p +. logpow (float_of_int n -. float_of_int k) q in
-	exp lnpbico
+(* binomial probability  (n choose k) p^k q^(n-k) *)
+let pbico (n:int) (k:int) (p:float) (q:float) =
+if (n<=20) then 
+    binomial_table.(n).(k) *. p ** (float_of_int k) *. q ** (float_of_int (n-k))
+	else 
+	exp(logbico n k  +.  logpow (float_of_int k) p +. logpow (float_of_int n -. float_of_int k) q) 
 ;;						
-(** 
-    from ascii code to epsilon
-    @param c int
-    @return epsilon float
-*)
-let float_of_quality  c =  
+let float_of_quality  (c:int) =  
   (10.0**(-.(float_of_int ( c - 33))/. 10.0))
 ;;
-(** 
+(* 
 probability of having 1 alternative allele appearing
 in the pileup
-    @param k number of chromosomes bearing an alternative allele
-    @param n total number of chromosomes
-    @param epsilon_list  epsilon_list[0] quality of the ref
+    k number of chromosomes bearing an alternative allele
+    n total number of chromosomes
+    epsilon_list  epsilon_list[0] quality of the ref
                          epsilon_list[1] quality of the alt
-    @return p 
 *)
-let pk k n er ea  =
+let pk (k:int) (n:int) (er:float) (ea:float)  =
     if (k>n) then  raise (Continue("pk::k>n"));
     let er = if (er>0.5) then 0.5 else er 
 	and ea = if (ea>0.5) then 0.5 else ea in 
 	let pa = (float_of_int k) /. (float_of_int n)
         in 
-        let rho1    = er *. (1.0 -. 2.0 *. ea)   /. (1.0 -. ea -. er) 
-		and alpha1  = ea *. (1.0 -. 2.0 *. er)   /. (1.0 -. ea -. er)
+        let rho    = er *. (1.0 -. 2.0 *. ea)   /. (1.0 -. ea -. er) 
+		and alpha  = ea *. (1.0 -. 2.0 *. er)   /. (1.0 -. ea -. er)
         in
-        let res = ((1.0 -. rho1) *. pa +. alpha1 *. (1.0 -. pa)) 
+        let res = ((1.0 -. rho) *. pa +. alpha *. (1.0 -. pa)) 
         in if (res > 1.0 ) then 
 		raise (Continue("internal:invalid pk er:"^(string_of_float er)^" ea:"^(string_of_float ea))) 
 		else res
 ;;      
-let prob_k n k f =
+let prob_k (n:int) (k:int) (f:float) =
    if (n<=20) then 
     binomial_table.(n).(k) *. f ** (float_of_int k) *. (1.0 -. f) ** (float_of_int (n-k))   else 
 	exp	(logbico n k +. logpow (float_of_int k) f +. logpow (float_of_int (n - k)) (1.0 -. f))  
 ;;
-let prob_k = memoize3 prob_k
-;; 
-let round x = int_of_float (floor (x +. 0.5))
+let round (x:float) = int_of_float (floor (x +. 0.5))
 ;;
-(** computes p(n_a|f), see docs *)
-let p_na_given_f na f n g  er ea =
+let p_na_given_f (na:int) (f:float) (n:int) (g:int)  (er:float) (ea:float) =
   let sum = ref 0. in    
     for k = 0 to n  do
-    let pk = pk k n er ea in
-      sum:=!sum +. (pbico g na pk (1.0 -. pk)) *. (prob_k n k f); 
+    let pk =  pk k n er ea  in
+      sum:=!sum +. (pbico g na pk (1.0 -. pk))  *. (prob_k n k f)  ; 
     done;
 	!sum
 ;;  
 (* NB: I know that below I am using a sloppy way of comparing
-float numbers. It happens to work in this specific occasion, though*)
-let prior_unfolded_informative theta beta bigd f =
+float numbers. It happens to work in this specific occasion*)
+let prior_unfolded_informative (theta:float) (beta:float) (bigd:float) (f:float) =
 	match f with
 	|0.0 -> 1.0 -. theta *. beta -. bigd
 	|1.0 -> bigd
@@ -204,10 +157,8 @@ let prior_unfolded_flat theta bigd f =
 	|_ -> theta /. 99.0
 ;;
 let prior_folded_flat theta f =
-	match f with
-	|0.0 -> (1.0 -. theta) /. 2.0 
-	|1.0 -> (1.0 -. theta) /. 2.0
-	|_ ->  theta /. 99.0 
+	if (f=0.0 || f=1.0) then (1.0 -. theta) /. 2.0
+	else  theta /. 99.0 
 ;;	
 (** expected value of f
     @param p float array of probabilities
