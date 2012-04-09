@@ -32,6 +32,9 @@ let binomial_table=
   167960.; 125970.; 77520.; 38760.; 15504.; 4845.; 1140.; 190.; 20.; 
   1.|]|]
 ;;
+(*rows indexed by k, columns by f *)
+let knm = Array.init 101 (function i -> Array.create 101 0.0)
+;; 
 let epsilon = sqrt epsilon_float
 ;;
 let isnan (x : float) = x <> x
@@ -85,9 +88,9 @@ let logbico n k = factln n -. factln k -. factln ( n - k)
 let logbico  = memoize2 logbico
 ;;
 let logpow (e:float) (base:float) = 
-	(*if ( e = 0.0 && base = 0.0 ) then 0.0 
-	else*) if (base = 0.) then 0. 
-	else e *. log base  
+	if ( e = 0.0 && base = 0.0 ) then 0.0 
+	(*else if ( base = 0.0 ) then 0. *)
+	else (e *. (log base))  
 ;;
 (* binomial probability  (n choose k) p^k q^(n-k) *)
 let pbico (n:int) (k:int) (p:float) (q:float) =
@@ -96,6 +99,15 @@ if (n<=20) then
 	else 
 	exp(logbico n k  +.  logpow (float_of_int k) p +. logpow (float_of_int n -. float_of_int k) q) 
 ;;						
+let fill_kn_matrix  n =
+    for k = 0 to n do
+    for f = 0 to 100 do
+        let p = (float_of_int f /. 100.0) in
+        knm.(k).(f) <- ( pbico n k p (1.0 -. p) )  
+    done
+ done;
+ (* Printf.fprintf stderr "end of filling\n"; *)
+;;
 let float_of_quality  (c:int) =  
   (10.0**(-.(float_of_int ( c - 33))/. 10.0))
 ;;
@@ -128,11 +140,12 @@ let prob_k (n:int) (k:int) (f:float) =
 ;;
 let round (x:float) = int_of_float (floor (x +. 0.5))
 ;;
-let p_na_given_f (na:int) (f:float) (n:int) (g:int)  (er:float) (ea:float) =
+let p_na_given_f (na:int) (f:float) (n:int) (g:int)  (er:float) (ea:float) (fi:int) =
   let sum = ref 0. in    
     for k = 0 to n  do
     let pk =  pk k n er ea  in
-      sum:=!sum +. (pbico g na pk (1.0 -. pk))  *. (prob_k n k f)  ; 
+      sum:=!sum +. (pbico g na pk (1.0 -. pk))  *. knm.(k).(fi); (*(prob_k n k f) *)  
+       (*Printf.fprintf stdout "k=%d pk=%g sum=%g g=%d na=%d n=%d pbico=%g\n" k pk !sum g na n (pbico g na pk (1.0 -. pk));  *)
     done;
 	!sum
 ;;  
@@ -188,6 +201,7 @@ let fields line =
         let get = List.nth all in
     (* chr position ref g pileup qualities *)
     [|get 0;get 1;get 2; get 3;get 4;get 5|]
+;;
 let parse_pileup pileup qualities =
 	let table = Array.init 8 (fun e -> 0) in
 	(* table contains the following fields:
@@ -243,7 +257,6 @@ let parse_pileup pileup qualities =
 	done;
 	table
 ;;
-(** *)
 let print_spectrum div ps_normalized  =
   for i = 0 to div-1  do
     Printf.fprintf stdout "%g\t" ps_normalized.(i)
@@ -338,13 +351,15 @@ let _ =
       |"unfolded","flat"        ->  prior_unfolded_flat theta  bigd  
       |"folded","flat"        ->    prior_folded_flat theta   
       |_ -> failwith "unsupported prior" in
-      try
+    fill_kn_matrix  nchr;      
+    try
        while true do
         let line = input_line inchannel  in
         try 
         let fields = fields line in
         if (fields.(2)="*" ||  (*if the reference base is not known *) 
-		(Str.string_match (Str.regexp ".*[+-][0-9].*") fields.(4) 0)) (* or there are deletions in the pileup *)
+		(Str.string_match (Str.regexp ".*[+-][0-9].*") fields.(4) 0)  (* or there are deletions in the pileup *)
+         ) 
 		then raise (Continue("skipping: contains indels or unknown ref")); (* skip the line *)
         let chr = fields.(0) and pos = fields.(1)
 		and refc = fields.(2) in   
@@ -361,7 +376,8 @@ let _ =
 			raise (Continue "reference could be wrong")
 		end;
 		let qref = (if (nr>0) then (table.(6) / nr) else 0) 
-		and qalt = (if (na>0) then (table.(7) / na)  else 0) in 
+		and qalt = (if (na>0) then (table.(7) / na)  else 0) in
+        if (na>0 && qalt<37) then   raise (Continue("skipping: low quality alt"));
         let g = (na + nr)  in
         let qalt = if (qalt=0) then qref else qalt in 
         let qref = if (qref=0) then qalt else qref in  
@@ -369,11 +385,11 @@ let _ =
 		let norm = ref 0.0 in
 		for i = 0 to div do
 			fs.(i) <- (float_of_int i) /. (float_of_int div) ;
-			ps.(i) <- ((p_na_given_f na fs.(i) nchr g er ea) *. (prior fs.(i)));  
+			ps.(i) <- ((p_na_given_f na fs.(i) nchr g er ea i)  *. (prior fs.(i)));  
 			norm := !norm +. ps.(i)  		
 		done;
 		for i = 0 to div do
-			ps.(i) <- ( ps.(i) /. !norm )
+			ps.(i) <- ( ps.(i) /. !norm );
 		done;
 		(* output fields :
 			chr pos ref nr na
@@ -391,4 +407,3 @@ let _ =
 			(* raised whenever there's a malformed line *)
         done 
      with End_of_file -> ();;
-(** *)
