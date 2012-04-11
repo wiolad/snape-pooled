@@ -5,4 +5,4 @@ snape-pooled-mac: pooled.ml
 snape-pooled: pooled.ml
 	ocamlopt.opt -ccopt -static -o snape-pooled str.cmxa pooled.ml
 clean:
-	rm *.cmx *.cmi pooled.o snape-pooled
+	rm *.cmx *.cmi *.cmo pooled.o snape-pooled

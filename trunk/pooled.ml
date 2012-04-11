@@ -33,7 +33,7 @@ let binomial_table=
   1.|]|]
 ;;
 (*rows indexed by k, columns by f *)
-let knm = Array.init 101 (function i -> Array.create 101 0.0)
+let prob_k_f = Array.init 101 (function i -> Array.create 101 0.0)
 ;; 
 let epsilon = sqrt epsilon_float
 ;;
@@ -99,11 +99,11 @@ if (n<=20) then
 	else 
 	exp(logbico n k  +.  logpow (float_of_int k) p +. logpow (float_of_int n -. float_of_int k) q) 
 ;;						
-let fill_kn_matrix  n =
+let fill_prob_k_f_matrix  n =
     for k = 0 to n do
     for f = 0 to 100 do
         let p = (float_of_int f /. 100.0) in
-        knm.(k).(f) <- ( pbico n k p (1.0 -. p) )  
+        prob_k_f.(k).(f) <- ( pbico n k p (1.0 -. p) )  
     done
  done;
  (* Printf.fprintf stderr "end of filling\n"; *)
@@ -133,22 +133,30 @@ let pk (k:int) (n:int) (er:float) (ea:float)  =
 		raise (Continue("internal:invalid pk er:"^(string_of_float er)^" ea:"^(string_of_float ea))) 
 		else res
 ;;      
-let prob_k (n:int) (k:int) (f:float) =
+(* let prob_k (n:int) (k:int) (f:float) =
    if (n<=20) then 
     binomial_table.(n).(k) *. f ** (float_of_int k) *. (1.0 -. f) ** (float_of_int (n-k))   else 
 	exp	(logbico n k +. logpow (float_of_int k) f +. logpow (float_of_int (n - k)) (1.0 -. f))  
-;;
+;;*)
 let round (x:float) = int_of_float (floor (x +. 0.5))
 ;;
 let p_na_given_f (na:int) (f:float) (n:int) (g:int)  (er:float) (ea:float) (fi:int) =
   let sum = ref 0. in    
     for k = 0 to n  do
     let pk =  pk k n er ea  in
-      sum:=!sum +. (pbico g na pk (1.0 -. pk))  *. knm.(k).(fi); (*(prob_k n k f) *)  
-       (*Printf.fprintf stdout "k=%d pk=%g sum=%g g=%d na=%d n=%d pbico=%g\n" k pk !sum g na n (pbico g na pk (1.0 -. pk));  *)
+      sum:=!sum +. ( pbico g na pk (1.0 -. pk) )  *. prob_k_f.(k).(fi); 
     done;
 	!sum
-;;  
+;; 
+let first_binomial  (na:int)  (n:int) (g:int)  (er:float) (ea:float)  =
+	let probs = Array.init (n+1) (fun i -> 0.0) in 
+	for k = 0 to n  do
+	let pk =  pk k n er ea  in
+	probs.(k)<-( pbico g na pk (1.0 -. pk) );
+	(* Printf.fprintf stdout "pk=%g k=%d n=%d g=%d pbico=%g\n" pk k n g ( pbico g na pk (1.0 -. pk) ) *)
+	done;
+	probs
+;; 
 (* NB: I know that below I am using a sloppy way of comparing
 float numbers. It happens to work in this specific occasion*)
 let prior_unfolded_informative (theta:float) (beta:float) (bigd:float) (f:float) =
@@ -276,6 +284,7 @@ and fold = ref ""
 and priortype = ref ""
 and trust = ref 1.0
 and spectrum = ref false
+and fast=ref false
 ;;
 let parsecmdline () =
  Arg.parse [
@@ -286,6 +295,7 @@ let parsecmdline () =
     ("-priortype",Set_string(priortype), "informative or flat");
 	("-trust",Set_float(trust),"[0,1] trust in the reference");
     ("-spectrum",Unit(fun () -> spectrum:= true),"prints MAF probability distribution")
+	("-fast",Unit(fun () -> fast:= true), "approximates pop frequency with pileup frequency")
 	] 
     (fun e ->  () ) 
     "Usage e.g. : snape-pooled -nchr 10 -theta 0.001 -D 0.1 -fold folded -priortype informative -spectrum "
@@ -329,6 +339,25 @@ let decode_genotype unsorted refc sorted =
 	with Exit -> begin genotype :=!genotype^letters.(!i) end;
 	!genotype
 ;;
+let compute_ps_fs div binomial1 prob_k_f =
+	let norm=ref 0.0 in
+	let fs = Array.init (div +1) (fun e -> 0.0)
+		  and ps = Array.init (div +1) (fun e -> 0.0) in
+for j = 0 to div do
+			ps.(j)<-0.0;
+			fs.(j) <- ( float_of_int j ) /. ( float_of_int div ) ;	
+			for i = 0 to nchr do
+				ps.(j) <- ps.(j) +. binomial1.(i) *. prob_k_f.(i).(j) ;
+				(* Printf.fprintf stdout "ps:(%d):%g binomial1(%d):%g prob_k_f(%d)(%d):%g\n" j ps.(j) i binomial1.(i) i j  prob_k_f.(i).(j)i *)
+			done;
+			ps.(j) <- ps.(j) *. (prior fs.(j));
+			norm := !norm +. ps.(j) 
+		done; 
+		for i = 0 to div do
+			ps.(i) <- ( ps.(i) /. !norm );
+		done;
+	[|ps;fs|]
+;;
 (** main *)
 let _ =
     	splash ();
@@ -339,7 +368,8 @@ let _ =
 		and fold = !fold
 		and priortype = !priortype
 		and trust = !trust 
-		and spectrum = !spectrum  in
+		and spectrum = !spectrum  
+		and fast = !fast in
       	let bigd = if ( bigd >= theta ) then bigd else theta  in 
       	let inchannel = stdin in  
 		  let div=100 in let beta = log (float_of_int div) +. 0.57721 in
@@ -351,7 +381,7 @@ let _ =
       |"unfolded","flat"        ->  prior_unfolded_flat theta  bigd  
       |"folded","flat"        ->    prior_folded_flat theta   
       |_ -> failwith "unsupported prior" in
-    fill_kn_matrix  nchr;      
+    fill_prob_k_f_matrix  nchr;      
     try
        while true do
         let line = input_line inchannel  in
@@ -383,14 +413,11 @@ let _ =
         let qref = if (qref=0) then qalt else qref in  
         let er,ea =  (trust *. float_of_quality qref , float_of_quality qalt ) in 
 		let norm = ref 0.0 in
-		for i = 0 to div do
-			fs.(i) <- (float_of_int i) /. (float_of_int div) ;
-			ps.(i) <- ((p_na_given_f na fs.(i) nchr g er ea i)  *. (prior fs.(i)));  
-			norm := !norm +. ps.(i)  		
-		done;
-		for i = 0 to div do
-			ps.(i) <- ( ps.(i) /. !norm );
-		done;
+		(* here I fill a vector of length n, containing the values of the first binomial for each possible
+			value of k; I do it only once per row as opposed to 100 times *)
+		let binomial1 = first_binomial na nchr g er ea 
+		in 
+	  	let [|ps,fs|] = compute_ps_fs div binomial1 prob_k_f in 
 		(* output fields :
 			chr pos ref nr na
 			qref qalt genotype 1-p(0) p(1) E(f)
