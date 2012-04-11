@@ -295,7 +295,6 @@ let parsecmdline () =
     ("-priortype",Set_string(priortype), "informative or flat");
 	("-trust",Set_float(trust),"[0,1] trust in the reference");
     ("-spectrum",Unit(fun () -> spectrum:= true),"prints MAF probability distribution")
-	("-fast",Unit(fun () -> fast:= true), "approximates pop frequency with pileup frequency")
 	] 
     (fun e ->  () ) 
     "Usage e.g. : snape-pooled -nchr 10 -theta 0.001 -D 0.1 -fold folded -priortype informative -spectrum "
@@ -339,11 +338,11 @@ let decode_genotype unsorted refc sorted =
 	with Exit -> begin genotype :=!genotype^letters.(!i) end;
 	!genotype
 ;;
-let compute_ps_fs div binomial1 prob_k_f =
+let compute_ps_fs div binomial1 prob_k_f prior nchr =
 	let norm=ref 0.0 in
 	let fs = Array.init (div +1) (fun e -> 0.0)
 		  and ps = Array.init (div +1) (fun e -> 0.0) in
-for j = 0 to div do
+    for j = 0 to div do
 			ps.(j)<-0.0;
 			fs.(j) <- ( float_of_int j ) /. ( float_of_int div ) ;	
 			for i = 0 to nchr do
@@ -368,13 +367,10 @@ let _ =
 		and fold = !fold
 		and priortype = !priortype
 		and trust = !trust 
-		and spectrum = !spectrum  
-		and fast = !fast in
+		and spectrum = !spectrum  in  
       	let bigd = if ( bigd >= theta ) then bigd else theta  in 
       	let inchannel = stdin in  
 		  let div=100 in let beta = log (float_of_int div) +. 0.57721 in
-		  let fs = Array.init (div +1) (fun e -> 0.0)
-		  and ps = Array.init (div +1) (fun e -> 0.0) in
       let prior = match fold, priortype with
       |"unfolded","informative" ->  prior_unfolded_informative theta beta bigd  
       |"folded","informative" ->    prior_folded_informative theta beta   
@@ -412,12 +408,11 @@ let _ =
         let qalt = if (qalt=0) then qref else qalt in 
         let qref = if (qref=0) then qalt else qref in  
         let er,ea =  (trust *. float_of_quality qref , float_of_quality qalt ) in 
-		let norm = ref 0.0 in
 		(* here I fill a vector of length n, containing the values of the first binomial for each possible
 			value of k; I do it only once per row as opposed to 100 times *)
 		let binomial1 = first_binomial na nchr g er ea 
 		in 
-	  	let [|ps,fs|] = compute_ps_fs div binomial1 prob_k_f in 
+	  	let [|ps;fs|] = compute_ps_fs div binomial1 prob_k_f prior nchr in 
 		(* output fields :
 			chr pos ref nr na
 			qref qalt genotype 1-p(0) p(1) E(f)
