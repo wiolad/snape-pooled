@@ -32,8 +32,8 @@ let binomial_table=
   167960.; 125970.; 77520.; 38760.; 15504.; 4845.; 1140.; 190.; 20.; 
   1.|]|]
 ;;
-(*rows indexed by k, columns by f *)
-let prob_k_f = Array.init 101 (function i -> Array.create 101 0.0)
+(*rows indexed by k (which can go from 0 to nchr), columns by f *)
+let prob_k_f = Array.init 1000 (function i -> Array.create 101 0.0)
 ;; 
 let epsilon = sqrt epsilon_float
 ;;
