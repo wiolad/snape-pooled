@@ -1,9 +1,22 @@
 (*
-Copyright (C) 2011 by Emanuele Raineri
+Copyright (C) 2011-2012 by Emanuele Raineri
+
+
+
 *)
 open Arg
 exception Continue of string
 exception Next
+let nchr = ref 0
+and theta = ref 0.001
+and bigd= ref 0.1
+and fold = ref ""
+and priortype = ref ""
+and trust = ref 1.0
+and spectrum = ref false
+and fast=ref false
+and noextremes= ref false
+;;
 (***************************
 		maths 
 ****************************)
@@ -133,11 +146,6 @@ let pk (k:int) (n:int) (er:float) (ea:float)  =
 		raise (Continue("internal:invalid pk er:"^(string_of_float er)^" ea:"^(string_of_float ea))) 
 		else res
 ;;      
-(* let prob_k (n:int) (k:int) (f:float) =
-   if (n<=20) then 
-    binomial_table.(n).(k) *. f ** (float_of_int k) *. (1.0 -. f) ** (float_of_int (n-k))   else 
-	exp	(logbico n k +. logpow (float_of_int k) f +. logpow (float_of_int (n - k)) (1.0 -. f))  
-;;*)
 let round (x:float) = int_of_float (floor (x +. 0.5))
 ;;
 let p_na_given_f (na:int) (f:float) (n:int) (g:int)  (er:float) (ea:float) (fi:int) =
@@ -191,7 +199,11 @@ let expected_value p f =
     and lf = Array.length f in
     assert (lp=lf);
 	let ef = ref 0.0 in
-    for i = 0 to lp -1 do
+    let lowerbound = 
+    if (!noextremes) then 1 else 0
+    and upperbound = 
+    if (!noextremes) then (lp -2)  else (lp -1) in
+    for i = lowerbound to upperbound do
 		ef:=!ef +. p.(i) *. f.(i)
 	done;
 	!ef
@@ -200,11 +212,11 @@ let expected_value p f =
 	parsing
 ******************************************)
 let split_tab=Str.split (Str.regexp "\t") ;;
+let fields line =
 (** 
     @param line
     @return  chr position ref g pileup qualities
 *)
-let fields line =
     let all= split_tab line in
         let get = List.nth all in
     (* chr position ref g pileup qualities *)
@@ -266,25 +278,17 @@ let parse_pileup pileup qualities =
 	table
 ;;
 let print_spectrum div ps_normalized  =
+    let delta = 1.0 /. (float_of_int div) in
   for i = 0 to div-1  do
-    Printf.fprintf stdout "%g\t" ps_normalized.(i)
+    Printf.fprintf stdout "%g:%g\t" (delta *. (float_of_int i)) ps_normalized.(i)
   done;
-  Printf.fprintf stdout "%g\n" ps_normalized.(div) 
+  Printf.fprintf stdout "%g:%g\n" (delta *. (float_of_int div)) ps_normalized.(div) 
 ;;
 let splash () =
   Printf.fprintf stderr "***************************************************************\n%!"; 
   Printf.fprintf stderr "snape-pooled : a method for calling SNPs in pooled samples\n%!";
   Printf.fprintf stderr "$Date$ $Rev$\n%!";
   Printf.fprintf stderr "***************************************************************\n%!"
-;;
-let nchr = ref 0
-and theta = ref 0.001
-and bigd= ref 0.1
-and fold = ref ""
-and priortype = ref ""
-and trust = ref 1.0
-and spectrum = ref false
-and fast=ref false
 ;;
 let parsecmdline () =
  Arg.parse [
@@ -293,8 +297,11 @@ let parsecmdline () =
     ("-D",Set_float (bigd),"D");
     ("-fold",Set_string (fold),"folded or unfolded");
     ("-priortype",Set_string(priortype), "informative or flat");
-	("-trust",Set_float(trust),"[0,1] trust in the reference");
-    ("-spectrum",Unit(fun () -> spectrum:= true),"prints MAF probability distribution")
+    ("-trust",Set_float(trust),"[0,1] trust in the reference");
+    ("-spectrum",Unit(fun () -> spectrum:= true),"prints MAF probability
+    distribution");
+    ("-noextremes", Unit(fun () -> noextremes:= true), "excludes f=0 and f=1
+    from E(f)")
 	] 
     (fun e ->  () ) 
     "Usage e.g. : snape-pooled -nchr 10 -theta 0.001 -D 0.1 -fold folded -priortype informative -spectrum "
@@ -339,6 +346,7 @@ let decode_genotype unsorted refc sorted =
 	!genotype
 ;;
 let compute_ps_fs div binomial1 prob_k_f prior nchr =
+        (* returns normalized ps *)
 	let norm=ref 0.0 in
 	let fs = Array.init (div +1) (fun e -> 0.0)
 		  and ps = Array.init (div +1) (fun e -> 0.0) in
@@ -347,7 +355,6 @@ let compute_ps_fs div binomial1 prob_k_f prior nchr =
 			fs.(j) <- ( float_of_int j ) /. ( float_of_int div ) ;	
 			for i = 0 to nchr do
 				ps.(j) <- ps.(j) +. binomial1.(i) *. prob_k_f.(i).(j) ;
-				(* Printf.fprintf stdout "ps:(%d):%g binomial1(%d):%g prob_k_f(%d)(%d):%g\n" j ps.(j) i binomial1.(i) i j  prob_k_f.(i).(j)i *)
 			done;
 			ps.(j) <- ps.(j) *. (prior fs.(j));
 			norm := !norm +. ps.(j) 
@@ -384,7 +391,8 @@ let _ =
         try 
         let fields = fields line in
         if (fields.(2)="*" ||  (*if the reference base is not known *) 
-		(Str.string_match (Str.regexp ".*[+-][0-9].*") fields.(4) 0)  (* or there are deletions in the pileup *)
+		(Str.string_match (Str.regexp ".*[+-][0-9].*") fields.(4) 0)  
+                (* or there are deletions in the pileup *)
          ) 
 		then raise (Continue("skipping: contains indels or unknown ref")); (* skip the line *)
         let chr = fields.(0) and pos = fields.(1)
@@ -422,7 +430,7 @@ let _ =
 			in 
 		 Printf.fprintf stdout "%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\t%.4g\t%.4g\t%.4g" 
              	chr pos refc nr na qref qalt genotype
-				(1.0 -. ps.(0)) ps.(1) ef;
+				(1.0 -. ps.(0)) ps.(div) ef;
 			if spectrum then begin Printf.fprintf stdout "\t"; print_spectrum div ps end
 			else Printf.fprintf stdout "\n" 
           with Continue s -> Printf.fprintf stderr "warning:%s in {%s}\n%!" s line 

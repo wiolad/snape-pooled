@@ -1,4 +1,4 @@
-<TeXmacs|1.0.7.3>
+<TeXmacs|1.0.7.10>
 
 <style|tmweb>
 
@@ -51,7 +51,7 @@
   These are:
 
   <block|<tformat|<twith|table-width|45>|<twith|table-hmode|max>|<cwith|6|6|2|2|cell-row-span|34>|<cwith|6|6|2|2|cell-col-span|45>|<table|<row|<cell|<with|font-family|tt|nchr>>|<cell|Number
-  of different individuals in the pool>>|<row|<cell|<with|font-family|tt|theta>>|<cell|<with|mode|math|\<theta\>>
+  of different individuals in the pool>>|<row|<cell|<with|font-family|tt|theta>>|<cell|<math|\<theta\>>
   the nucleotide diversity>>|<row|<cell|<with|font-family|tt|D>>|<cell|Prior
   genetic difference between reference genome and
   population>>|<row|<cell|<with|font-family|tt|priortype>>|<cell|Can be
@@ -86,6 +86,8 @@
 
     <item>position along the chromosome
 
+    <item>reference
+
     <item># reference nucleotides
 
     <item># number of minor (alternative) nucleotides
@@ -96,12 +98,12 @@
 
     <item>first and second most frequent nucleotides in the pileup
 
-    <item><with|mode|math|1-p(0)> where <math|p(f)> is the probability
-    distribution function for the minor allele freqeuncy
+    <item><math|1-p<around|(|0|)>> where <math|p<around|(|f|)>> is the
+    probability distribution function for the minor allele freqeuncy
 
-    <item><with|mode|math|p(1)>
+    <item><math|p<around|(|1|)>>
 
-    <item><math|E(f)> mean value of <math|f>
+    <item><math|E<around|(|f|)>> mean value of <math|f>
   </enumerate>
 
   In addition, if <with|font-family|tt|-spectrum> is specified on the command
@@ -113,7 +115,7 @@
 
   <with|font-base-size|8|.<with|font-family|tt|<with|font-base-size|9|/snape-pooled
   -nchr 9 -theta 0.1 -D 0.1 -priortype flat -fold folded \<less\>
-  input_file.pool>><with|font-base-size|9|<with|font-base-size|10|>>>
+  input_file.pool>>>
 
   \;
 
