@@ -1,0 +1,1 @@
+./snape-pooled -nchr 3 -theta 0.001 -D 0.1 -fold unfolded -priortype informative -spectrum < example.pileup  | head -n 1 | awk '{for (i=12;i<=112;i++) print $i}' | sed "s/:/ /" > spectrum1_inf_unfolded.txt

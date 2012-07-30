@@ -1,0 +1,141 @@
+\documentclass{report}
+\usepackage{geometry,enumerate,color}
+\geometry{a4paper}
+
+%%%%%%%%%% Start TeXmacs macros
+%\newcommand{\section}[1]{\medskip\bigskip \noindent\textbf{\LARGE #1}}
+\renewcommand{\rmdefault}{pplx}
+\newcommand{\tmem}[1]{{\em #1\/}}
+\newcommand{\tmtexttt}[1]{{\ttfamily{#1}}}
+\newenvironment{enumeratenumeric}{\begin{enumerate}[1.] }{\end{enumerate}}
+\definecolor{grey}{rgb}{0.75,0.75,0.75}
+\definecolor{orange}{rgb}{1.0,0.5,0.5}
+\definecolor{brown}{rgb}{0.5,0.25,0.0}
+\definecolor{pink}{rgb}{1.0,0.5,0.5}
+%%%%%%%%%% End TeXmacs macros
+
+\begin{document}
+
+\title{SNAPE-pooled}\author{emanuele.raineri@gmail.com}
+\maketitle
+
+\section{introduction}
+
+SNAPE-pooled computes the probability distribution for the frequency of the
+minor allele in a certain population, at a certain position in the genome of
+the population. If you decide to use SNAPE-pooled, I suggest you first read the
+accompanying paper which describes the formulae used in it.
+
+\section{input format}
+
+The input data must be in the pileup format 
+(see {\color{blue}{http://samtools.sourceforge.net/pileup.shtml}}),
+{\tmem{i.e.}} the following fields must be present:
+
+
+\begin{enumeratenumeric}
+  \item chromosome (string) 
+  
+  \item position along the chromosome (integer)
+  
+  \item reference nucleotide, {\tmem{i.e.}} the content of the reference
+  genome for the population at that position of the given chromosome
+  
+  \item read depth
+  
+  \item pileup, a list of all the nucleotides aligned with the position
+  specified in (1) and (2). Each nucleotide comes from a different read, each
+  read might (or not) come from a different individual.
+  
+  \item quality pileup, {\tmem{i.e.}}  a quality symbol for each of the
+  nucleotides in (4).
+  
+  
+\end{enumeratenumeric}
+
+\section{command line options}
+
+It is also necessary to specify some of the parameters used in the
+calculations, which can be done through a set of command line options. These
+are:
+
+\begin{tabular}{|l|l|}
+  \hline
+  \tmtexttt{nchr} & Number of different individuals in the pool\\
+  \hline
+  \tmtexttt{theta} & $\theta$ the nucleotide diversity\\
+  \hline
+  \tmtexttt{D} & Prior genetic difference between reference genome and
+  population\\
+  \hline
+  \tmtexttt{priortype} & Can be {\color{blue} informative} or {\color{blue}
+  flat}\\
+  \hline
+  \tmtexttt{fold} & {\color{blue} folded} or {\color{blue} unfolded}\\
+  \hline
+  \tmtexttt{noextremes} & excludes $f = 0, 1$ from the computation of $E
+  \left( f \right)$\\
+  \hline
+  \tmtexttt{spectrum} & If present, print the full pdf for the minor allele
+  frequency\\
+  \hline
+\end{tabular}
+\\
+    If \tmtexttt{-spectrum} is not specified, only summary values will be printed,
+see following section.
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{output format}
+
+the output contains a minimum of $10$ fields, \tmtexttt{TAB}-separated, as in
+the following list:
+\begin{enumerate}
+  \item chr (1) and (2) are the genomic coordinates
+  
+  \item position along the chromosome
+  
+  \item reference
+  
+  \item number of reference nucleotides
+  
+  \item number of minor (alternative) nucleotides
+  
+  \item average quality of the reference nucleotides
+  
+  \item average quality of the alternative nucleotides
+  
+  \item first and second most frequent nucleotides in the pileup
+  
+  \item $1 - p (0)$ where $p (f)$ is the probability distribution function for
+  the minor allele freqeuncy
+  
+  \item $p (1)$
+  
+  \item $E (f)$ mean value of $f$
+\end{enumerate}
+In addition, if \tmtexttt{-spectrum} is specified on the command line, the
+full pdf for $f$ is printed after the fields listed above.
+
+\section{example}
+
+A typical command line:
+
+.\tmtexttt{/snape-pooled -nchr 9 -theta 0.1 -D 0.1 -priortype flat -fold
+folded < input\_file.pool}
+
+
+
+
+
+\end{document}
