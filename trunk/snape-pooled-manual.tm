@@ -50,13 +50,14 @@
   calculations, which can be done through a set of command line options.
   These are:
 
-  <block|<tformat|<twith|table-width|45>|<twith|table-hmode|max>|<cwith|6|6|2|2|cell-row-span|34>|<cwith|6|6|2|2|cell-col-span|45>|<table|<row|<cell|<with|font-family|tt|nchr>>|<cell|Number
+  <block|<tformat|<twith|table-width|45>|<twith|table-hmode|max>|<cwith|7|7|2|2|cell-row-span|34>|<cwith|7|7|2|2|cell-col-span|45>|<table|<row|<cell|<with|font-family|tt|nchr>>|<cell|Number
   of different individuals in the pool>>|<row|<cell|<with|font-family|tt|theta>>|<cell|<math|\<theta\>>
   the nucleotide diversity>>|<row|<cell|<with|font-family|tt|D>>|<cell|Prior
   genetic difference between reference genome and
   population>>|<row|<cell|<with|font-family|tt|priortype>>|<cell|Can be
   <with|color|blue|informative> or <with|color|blue|flat>>>|<row|<cell|<with|font-family|tt|fold>>|<cell|<with|color|blue|folded>
-  or <with|color|blue|unfolded>>>|<row|<cell|<with|font-family|tt|spectrum>>|<cell|If
+  or <with|color|blue|unfolded>>>|<row|<cell|<with|font-family|tt|noextremes>>|<cell|excludes
+  <math|f=0,1> from the computation of <math|E<around*|(|f|)>>>>|<row|<cell|<with|font-family|tt|spectrum>>|<cell|If
   present, print the full pdf for the minor allele frequency.>>>>>
 
   \;
