@@ -1,8 +1,8 @@
 (*
 Copyright (C) 2011-2012 by Emanuele Raineri
 
-
-
+date:$Date$
+build:$Rev$
 *)
 open Arg
 exception Continue of string
@@ -411,7 +411,13 @@ let _ =
 		end;
 		let qref = (if (nr>0) then (table.(6) / nr) else 0) 
 		and qalt = (if (na>0) then (table.(7) / na)  else 0) in
-        if (na>0 && qalt<37) then   raise (Continue("skipping: low quality alt"));
+        if (na > 0 && qalt < 37) then
+            begin 
+            let skip_msg=
+            Printf.sprintf "skipping: %d alt nucleotides with low avg quality:%d" na qalt 
+            in
+            raise (Continue(skip_msg))
+            end;
         let g = (na + nr)  in
         let qalt = if (qalt=0) then qref else qalt in 
         let qref = if (qref=0) then qalt else qref in  
