@@ -1,7 +1,6 @@
 \documentclass{report}
 \usepackage{geometry,enumerate,color}
 \geometry{a4paper}
-
 %%%%%%%%%% Start TeXmacs macros
 %\newcommand{\section}[1]{\medskip\bigskip \noindent\textbf{\LARGE #1}}
 \renewcommand{\rmdefault}{pplx}
@@ -53,6 +52,10 @@ The input data must be in the pileup format
   
 \end{enumeratenumeric}
 
+
+Please note that if the nucleotides different from the reference are of average quality $<37$,
+the corresponding position will not be considered for SNP calling.
+
 \section{command line options}
 
 It is also necessary to specify some of the parameters used in the
@@ -83,18 +86,6 @@ are:
 \\
     If \tmtexttt{-spectrum} is not specified, only summary values will be printed,
 see following section.
-
-
-
-
-
-
-
-
-
-
-
-
 
 \section{output format}
 
@@ -133,9 +124,6 @@ A typical command line:
 
 .\tmtexttt{/snape-pooled -nchr 9 -theta 0.1 -D 0.1 -priortype flat -fold
 folded < input\_file.pool}
-
-
-
 
 
 \end{document}
