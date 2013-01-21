@@ -1,7 +1,7 @@
-#summary Frequently asked questions.
+#summary Frequently Asked Questions.
 
 = FAQ =
 
-1.Why there are "nans" in my output?
+# Why there are "nans" in my output?
 
 Probably this is due to positions which correspond to bases of low quality (<ASCII 37). Try strpiing them before the analysis.
