@@ -1,13 +1,7 @@
-#summary One-sentence summary of this page.
+#summary Frequently asked questions.
 
-= Introduction =
+= FAQ =
 
-Add your content here.
+1.Why there are "nans" in my output?
 
-
-= Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+Probably this is due to positions which correspond to bases of low quality (<ASCII 37). Try strpiing them before the analysis.
