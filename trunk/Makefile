@@ -7,5 +7,7 @@ snape-pooled: pooled.ml
 docs: snape-pooled-manual.tex
 	latex $<
 	dvips -o snape-pooled-manual.ps snape-pooled-manual.dvi
+snape-pooled-fast: snape-pooled.c
+	gcc -g -o $@ $< -lm
 clean:
 	rm *.cmx *.cmi *.cmo pooled.o snape-pooled *.log *.ps *.dvi *.aux
