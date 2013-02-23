@@ -20,7 +20,7 @@ and noextremes= ref false
 (***************************
 		maths 
 ****************************)
-(*binomial table up to n = 20 *)
+(*binomial table (n choose k) up to n = 20 *)
 let binomial_table= 
 [|[|1.|]; [|1.; 1.|]; [|1.; 2.; 1.|]; [|1.; 3.; 3.; 1.|]; [|1.; 4.; 6.; 4.; 
   1.|]; [|1.; 5.; 10.; 10.; 5.; 1.|]; [|1.; 6.; 15.; 20.; 15.; 6.; 
@@ -62,22 +62,22 @@ let memoize f =
     fun n ->
 		try  Hashtbl.find t n 
     with Not_found ->    
-    (* Printf.fprintf stdout  "new2%!"; *) 
         let res = f n  in
         (Hashtbl.add t n res;
         res) 
-;; 
+;;
+
 let memoize2 f =
     let t2 = Hashtbl.create 1000
     in 
   fun n k ->
     try  Hashtbl.find t2 (n,k) 
     with Not_found ->    
-    (* Printf.fprintf stdout  "new2%!"; *) 
         let res = f n k in
         (Hashtbl.add t2 (n,k) res;
         res) 
-;; 
+;;
+
 let gammaln (z : float) =
     let cof =[|76.18009172947146;-86.50532032941677;
               24.01409824083091;-1.231739572450155;
@@ -93,25 +93,34 @@ let gammaln (z : float) =
     done;
 -. tmp +. log(2.5066282746310005*. !ser /. x) 
 ;;
+
 let factln  =
     memoize (fun (n:int) -> gammaln (float_of_int n +. 1.0)) 
-;;    
+;;
+
 let logbico n k = factln n -. factln k -. factln ( n - k)
 ;;
+
 let logbico  = memoize2 logbico
 ;;
+
 let logpow (e:float) (base:float) = 
 	if ( e = 0.0 && base = 0.0 ) then 0.0 
-	(*else if ( base = 0.0 ) then 0. *)
 	else (e *. (log base))  
 ;;
+
 (* binomial probability  (n choose k) p^k q^(n-k) *)
 let pbico (n:int) (k:int) (p:float) (q:float) =
 if (n<=20) then 
     binomial_table.(n).(k) *. p ** (float_of_int k) *. q ** (float_of_int (n-k))
-	else 
-	exp(logbico n k  +.  logpow (float_of_int k) p +. logpow (float_of_int n -. float_of_int k) q) 
-;;						
+    else 
+    exp (
+    logbico n k +. 
+    logpow ( float_of_int k ) p +. 
+    logpow ( float_of_int n -. float_of_int k ) q
+    ) 
+;;
+
 let fill_prob_k_f_matrix  n =
     for k = 0 to n do
     for f = 0 to 100 do
@@ -119,11 +128,12 @@ let fill_prob_k_f_matrix  n =
         prob_k_f.(k).(f) <- ( pbico n k p (1.0 -. p) )  
     done
  done;
- (* Printf.fprintf stderr "end of filling\n"; *)
 ;;
+
 let float_of_quality  (c:int) =  
   (10.0**(-.(float_of_int ( c - 33))/. 10.0))
 ;;
+
 (* 
 probability of having 1 alternative allele appearing
 in the pileup
@@ -145,46 +155,43 @@ let pk (k:int) (n:int) (er:float) (ea:float)  =
         in if (res > 1.0 ) then 
 		raise (Continue("internal:invalid pk er:"^(string_of_float er)^" ea:"^(string_of_float ea))) 
 		else res
-;;      
+;;
+
 let round (x:float) = int_of_float (floor (x +. 0.5))
 ;;
-let p_na_given_f (na:int) (f:float) (n:int) (g:int)  (er:float) (ea:float) (fi:int) =
-  let sum = ref 0. in    
-    for k = 0 to n  do
-    let pk =  pk k n er ea  in
-      sum:=!sum +. ( pbico g na pk (1.0 -. pk) )  *. prob_k_f.(k).(fi); 
-    done;
-	!sum
-;; 
+
 let first_binomial  (na:int)  (n:int) (g:int)  (er:float) (ea:float)  =
 	let probs = Array.init (n+1) (fun i -> 0.0) in 
 	for k = 0 to n  do
 	let pk =  pk k n er ea  in
 	probs.(k)<-( pbico g na pk (1.0 -. pk) );
-	(* Printf.fprintf stdout "pk=%g k=%d n=%d g=%d pbico=%g\n" pk k n g ( pbico g na pk (1.0 -. pk) ) *)
 	done;
 	probs
-;; 
+;;
+
 (* NB: I know that below I am using a sloppy way of comparing
-float numbers. It happens to work in this specific occasion*)
+float numbers. It happens to work in this specific occasion *)
 let prior_unfolded_informative (theta:float) (beta:float) (bigd:float) (f:float) =
 	match f with
 	|0.0 -> 1.0 -. theta *. beta -. bigd
 	|1.0 -> bigd
 	|_   -> theta /. (100.0 *. f)  	 
 ;;   
+
 let prior_folded_informative theta beta f =
 	match f with 
-	|0.0 -> (1.0 -. theta *. beta ) /. 2.0
-	|1.0 -> (1.0 -. theta *. beta ) /. 2.0
+	|0.0 -> ( 1.0 -. theta *. beta ) /. 2.0
+	|1.0 -> ( 1.0 -. theta *. beta ) /. 2.0
 	|_ -> theta /. (200.0 *. f *. (1.0 -. f))
 ;;
+
 let prior_unfolded_flat theta bigd f =
 	match f with
 	|0.0 -> 1.0 -. theta -. bigd
 	|1.0 -> bigd
 	|_ -> theta /. 99.0
 ;;
+
 let prior_folded_flat theta f =
 	if (f=0.0 || f=1.0) then (1.0 -. theta) /. 2.0
 	else  theta /. 99.0 
@@ -222,6 +229,7 @@ let fields line =
     (* chr position ref g pileup qualities *)
     [|get 0;get 1;get 2; get 3;get 4;get 5|]
 ;;
+
 let parse_pileup pileup qualities =
 	let table = Array.init 8 (fun e -> 0) in
 	(* table contains the following fields:
@@ -277,6 +285,7 @@ let parse_pileup pileup qualities =
 	done;
 	table
 ;;
+
 let print_spectrum div ps_normalized  =
     let delta = 1.0 /. (float_of_int div) in
   for i = 0 to div-1  do
@@ -284,12 +293,14 @@ let print_spectrum div ps_normalized  =
   done;
   Printf.fprintf stdout "%g:%g\n" (delta *. (float_of_int div)) ps_normalized.(div) 
 ;;
+
 let splash () =
   Printf.fprintf stderr "***************************************************************\n%!"; 
   Printf.fprintf stderr "snape-pooled : a method for calling SNPs in pooled samples\n%!";
   Printf.fprintf stderr "$Date$ $Rev$\n%!";
   Printf.fprintf stderr "***************************************************************\n%!"
 ;;
+
 let parsecmdline () =
  Arg.parse [
     ("-nchr",Set_int (nchr) ,"number of alleles in the pool");
@@ -306,6 +317,7 @@ let parsecmdline () =
     (fun e ->  () ) 
     "Usage e.g. : snape-pooled -nchr 10 -theta 0.001 -D 0.1 -fold folded -priortype informative -spectrum "
 ;;
+
 let decode_genotype unsorted refc sorted =
 	(* 
 	transfer unsorted in an array, as I have to change
@@ -345,6 +357,7 @@ let decode_genotype unsorted refc sorted =
 	with Exit -> begin genotype :=!genotype^letters.(!i) end;
 	!genotype
 ;;
+
 let compute_ps_fs div binomial1 prob_k_f prior nchr =
         (* returns normalized ps *)
 	let norm=ref 0.0 in
@@ -367,7 +380,7 @@ let compute_ps_fs div binomial1 prob_k_f prior nchr =
 (** main *)
 let _ =
     	splash ();
-		parsecmdline ();  
+	parsecmdline ();  
        	let nchr = !nchr
 		and theta = !theta
 		and bigd = !bigd
@@ -375,7 +388,7 @@ let _ =
 		and priortype = !priortype
 		and trust = !trust 
 		and spectrum = !spectrum  in  
-      	let bigd = if ( bigd >= theta ) then bigd else theta  in 
+        let bigd = if ( bigd >= theta ) then bigd else theta  in 
       	let inchannel = stdin in  
 		  let div=100 in let beta = log (float_of_int div) +. 0.57721 in
       let prior = match fold, priortype with
@@ -422,8 +435,9 @@ let _ =
         let qalt = if (qalt=0) then qref else qalt in 
         let qref = if (qref=0) then qalt else qref in  
         let er,ea =  (trust *. float_of_quality qref , float_of_quality qalt ) in 
-		(* here I fill a vector of length n, containing the values of the first binomial for each possible
-			value of k; I do it only once per row as opposed to 100 times *)
+		(* here I fill a vector of length n, containing the values of 
+                the first binomial for each possible
+		value of k; I do it only once per row as opposed to 100 times *)
 		let binomial1 = first_binomial na nchr g er ea 
 		in 
 	  	let [|ps;fs|] = compute_ps_fs div binomial1 prob_k_f prior nchr in 
