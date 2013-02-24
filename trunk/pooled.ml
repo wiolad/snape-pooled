@@ -22,41 +22,61 @@ and noextremes= ref false
 ****************************)
 (*binomial table (n choose k) up to n = 20 *)
 let binomial_table= 
-[|[|1.|]; [|1.; 1.|]; [|1.; 2.; 1.|]; [|1.; 3.; 3.; 1.|]; [|1.; 4.; 6.; 4.; 
-  1.|]; [|1.; 5.; 10.; 10.; 5.; 1.|]; [|1.; 6.; 15.; 20.; 15.; 6.; 
-  1.|]; [|1.; 7.; 21.; 35.; 35.; 21.; 7.; 1.|]; [|1.; 8.; 28.; 56.; 70.; 
-  56.; 28.; 8.; 1.|]; [|1.; 9.; 36.; 84.; 126.; 126.; 84.; 36.; 9.; 
-  1.|]; [|1.; 10.; 45.; 120.; 210.; 252.; 210.; 120.; 45.; 10.; 
-  1.|]; [|1.; 11.; 55.; 165.; 330.; 462.; 462.; 330.; 165.; 55.; 11.; 
-  1.|]; [|1.; 12.; 66.; 220.; 495.; 792.; 924.; 792.; 495.; 220.; 66.; 
-  12.; 1.|]; [|1.; 13.; 78.; 286.; 715.; 1287.; 1716.; 1716.; 1287.; 
-  715.; 286.; 78.; 13.; 1.|]; [|1.; 14.; 91.; 364.; 1001.; 2002.; 3003.;
-   3432.; 3003.; 2002.; 1001.; 364.; 91.; 14.; 1.|]; [|1.; 15.; 105.; 
-  455.; 1365.; 3003.; 5005.; 6435.; 6435.; 5005.; 3003.; 1365.; 455.; 
-  105.; 15.; 1.|]; [|1.; 16.; 120.; 560.; 1820.; 4368.; 8008.; 11440.; 
-  12870.; 11440.; 8008.; 4368.; 1820.; 560.; 120.; 16.; 1.|]; [|1.; 17.;
-   136.; 680.; 2380.; 6188.; 12376.; 19448.; 24310.; 24310.; 19448.; 
-  12376.; 6188.; 2380.; 680.; 136.; 17.; 1.|]; [|1.; 18.; 153.; 816.; 
-  3060.; 8568.; 18564.; 31824.; 43758.; 48620.; 43758.; 31824.; 
-  18564.; 8568.; 3060.; 816.; 153.; 18.; 1.|]; [|1.; 19.; 171.; 969.; 
-  3876.; 11628.; 27132.; 50388.; 75582.; 92378.; 92378.; 75582.; 
-  50388.; 27132.; 11628.; 3876.; 969.; 171.; 19.; 1.|]; [|1.; 20.; 190.;
-   1140.; 4845.; 15504.; 38760.; 77520.; 125970.; 167960.; 184756.; 
-  167960.; 125970.; 77520.; 38760.; 15504.; 4845.; 1140.; 190.; 20.; 
-  1.|]|]
+[|
+[|1.|]; 
+[|1.; 1.|]; 
+[|1.; 2.; 1.|]; 
+[|1.; 3.; 3.; 1.|]; 
+[|1.; 4.; 6.; 4.; 1.|]; 
+[|1.; 5.; 10.; 10.; 5.; 1.|]; 
+[|1.; 6.; 15.; 20.; 15.; 6.; 1.|]; 
+[|1.; 7.; 21.; 35.; 35.; 21.; 7.; 1.|]; 
+[|1.; 8.; 28.; 56.; 70.; 56.; 28.; 8.; 1.|]; 
+[|1.; 9.; 36.; 84.; 126.; 126.; 84.; 36.; 9.; 1.|]; 
+[|1.; 10.; 45.; 120.; 210.; 252.; 210.; 120.; 45.; 10.; 1.|];
+[|1.; 11.; 55.; 165.; 330.; 462.; 462.; 330.; 165.; 55.; 11.; 1.|]; 
+[|1.; 12.; 66.; 220.; 495.; 792.; 924.; 792.; 495.; 220.; 66.; 12.; 1.|]; 
+[|1.; 13.; 78.; 286.; 715.; 1287.; 1716.; 1716.; 1287.; 715.; 286.; 78.; 13.; 1.|]; 
+[|1.; 14.; 91.; 364.; 1001.; 2002.; 3003.; 3432.; 3003.; 2002.; 1001.; 364.; 91.; 14.; 1.|]; 
+[|1.; 15.; 105.; 455.; 1365.; 3003.; 5005.; 6435.; 6435.; 5005.; 3003.; 1365.; 455.; 105.; 15.; 1.|]; 
+[|1.; 16.; 120.; 560.; 1820.; 4368.; 8008.; 11440.; 12870.; 11440.; 8008.; 4368.; 1820.; 560.; 120.; 16.; 1.|]; 
+[|1.; 17.; 136.; 680.; 2380.; 6188.; 12376.; 19448.; 24310.; 24310.; 19448.; 12376.; 6188.; 2380.; 680.; 136.; 17.; 1.|]; 
+[|1.; 18.; 153.; 816.; 3060.; 8568.; 18564.; 31824.; 43758.; 48620.; 43758.; 31824.; 18564.; 8568.; 3060.; 816.; 153.; 18.; 1.|]; 
+[|1.; 19.; 171.; 969.; 3876.; 11628.; 27132.; 50388.; 75582.; 92378.; 92378.; 75582.; 50388.; 27132.; 11628.; 3876.; 969.; 171.; 19.; 1.|]; 
+[|1.; 20.; 190.; 1140.; 4845.; 15504.; 38760.; 77520.; 125970.; 167960.; 184756.; 167960.; 125970.; 77520.; 38760.; 15504.; 4845.; 1140.; 190.; 20.; 1.|]
+|]
 ;;
-(*rows indexed by k (which can go from 0 to nchr), columns by f *)
+
+(* table for pileup parsing *)
+let symbols = Hashtbl.create 7;;
+Hashtbl.add symbols "A" ( 1,7 );;
+Hashtbl.add symbols "C" ( 2,7 );;
+Hashtbl.add symbols "G" ( 3,7 );;
+Hashtbl.add symbols "T" ( 4,7 );;
+Hashtbl.add symbols "N" ( 5,7 );;
+Hashtbl.add symbols "." ( 0,6 );;
+Hashtbl.add symbols "," ( 0,6 );;
+
+(*
+rows indexed by k (which can go from 0 to nchr), columns by f 
+stores: (n chhose k) p^k (1-p)^(n-k)
+*)
+
 let prob_k_f = Array.init 1000 (function i -> Array.create 101 0.0)
 ;; 
+
 let epsilon = sqrt epsilon_float
 ;;
+
 let isnan (x : float) = x <> x
 ;;
+
 (**
     memoizes any function of one argument
     @param f 'a->'b
     @return a'->'b
 *)
+
 let memoize f =
     let t = Hashtbl.create 1000  in 
     fun n ->
@@ -78,7 +98,7 @@ let memoize2 f =
         res) 
 ;;
 
-let gammaln (z : float) =
+let gammaln ( z : float ) =
     let cof =[|76.18009172947146;-86.50532032941677;
               24.01409824083091;-1.231739572450155;
               0.1208650973866179e-2;-0.5395239384953e-5|]
@@ -98,18 +118,17 @@ let factln  =
     memoize (fun (n:int) -> gammaln (float_of_int n +. 1.0)) 
 ;;
 
-let logbico n k = factln n -. factln k -. factln ( n - k)
+let logbico  = memoize2 
+    (fun ( n:int ) ( k:int ) -> factln n -. factln k -. factln ( n - k) )
 ;;
 
-let logbico  = memoize2 logbico
-;;
-
-let logpow (e:float) (base:float) = 
+let logpow ( e:float ) ( base:float ) = 
 	if ( e = 0.0 && base = 0.0 ) then 0.0 
-	else (e *. (log base))  
+	else ( e *. ( log base ) )  
 ;;
 
 (* binomial probability  (n choose k) p^k q^(n-k) *)
+
 let pbico (n:int) (k:int) (p:float) (q:float) =
 if (n<=20) then 
     binomial_table.(n).(k) *. p ** (float_of_int k) *. q ** (float_of_int (n-k))
@@ -122,11 +141,12 @@ if (n<=20) then
 ;;
 
 let fill_prob_k_f_matrix  n =
+(* n number of chromosomes, user-defined *)
     for k = 0 to n do
-    for f = 0 to 100 do
-        let p = (float_of_int f /. 100.0) in
-        prob_k_f.(k).(f) <- ( pbico n k p (1.0 -. p) )  
-    done
+        for f = 0 to 100 do
+            let p = (float_of_int f /. 100.0) in
+            prob_k_f.(k).(f) <- ( pbico n k p (1.0 -. p) )  
+        done
  done;
 ;;
 
@@ -142,14 +162,14 @@ in the pileup
     epsilon_list  epsilon_list[0] quality of the ref
                          epsilon_list[1] quality of the alt
 *)
-let pk (k:int) (n:int) (er:float) (ea:float)  =
+let pk ( k:int ) ( n:int ) ( er:float ) ( ea:float )  =
     if (k>n) then  raise (Continue("pk::k>n"));
-    let er = if (er>0.5) then 0.5 else er 
-	and ea = if (ea>0.5) then 0.5 else ea in 
-	let pa = (float_of_int k) /. (float_of_int n)
+    let er = if ( er > 0.5 ) then 0.5 else er 
+	and ea = if ( ea > 0.5 ) then 0.5 else ea in 
+	let pa = ( float_of_int k ) /. ( float_of_int n )
         in 
         let rho    = er *. (1.0 -. 2.0 *. ea)   /. (1.0 -. ea -. er) 
-		and alpha  = ea *. (1.0 -. 2.0 *. er)   /. (1.0 -. ea -. er)
+	and alpha  = ea *. (1.0 -. 2.0 *. er)   /. (1.0 -. ea -. er)
         in
         let res = ((1.0 -. rho) *. pa +. alpha *. (1.0 -. pa)) 
         in if (res > 1.0 ) then 
@@ -157,7 +177,7 @@ let pk (k:int) (n:int) (er:float) (ea:float)  =
 		else res
 ;;
 
-let round (x:float) = int_of_float (floor (x +. 0.5))
+let round ( x:float ) = int_of_float (floor (x +. 0.5))
 ;;
 
 let first_binomial  (na:int)  (n:int) (g:int)  (er:float) (ea:float)  =
@@ -169,8 +189,9 @@ let first_binomial  (na:int)  (n:int) (g:int)  (er:float) (ea:float)  =
 	probs
 ;;
 
-(* NB: I know that below I am using a sloppy way of comparing
+(* reader: I know that below I am using a sloppy way of comparing
 float numbers. It happens to work in this specific occasion *)
+
 let prior_unfolded_informative (theta:float) (beta:float) (bigd:float) (f:float) =
 	match f with
 	|0.0 -> 1.0 -. theta *. beta -. bigd
@@ -206,28 +227,26 @@ let expected_value p f =
     and lf = Array.length f in
     assert (lp=lf);
 	let ef = ref 0.0 in
-    let lowerbound = 
-    if (!noextremes) then 1 else 0
-    and upperbound = 
-    if (!noextremes) then (lp -2)  else (lp -1) in
+    let lowerbound , upperbound  = 
+    if ( !noextremes ) then 1 , ( lp -2 )  
+    else 0 , ( lp -1 ) in
     for i = lowerbound to upperbound do
-		ef:=!ef +. p.(i) *. f.(i)
-	done;
+	ef:=!ef +. p.(i) *. f.(i)
+    done;
 	!ef
-;;                 
+;; 
+
 (*****************************************
 	parsing
 ******************************************)
+
 let split_tab=Str.split (Str.regexp "\t") ;;
+
 let fields line =
-(** 
-    @param line
-    @return  chr position ref g pileup qualities
-*)
     let all= split_tab line in
         let get = List.nth all in
     (* chr position ref g pileup qualities *)
-    [|get 0;get 1;get 2; get 3;get 4;get 5|]
+    [|get 0;get 1;get 2; get 3; get 4; get 5|]
 ;;
 
 let parse_pileup pileup qualities =
@@ -245,41 +264,20 @@ let parse_pileup pileup qualities =
 	let le = String.length pileup in
 	if (le = 0) then raise (Continue "empty pileup");
 	let i = ref 0 and pos = ref 0 in
-	while !i<le do
-		try
+        while (!i < le) do
+		try (* exception Next *)
 		let c = String.uppercase (String.sub pileup !i 1) in
-		if (c="A") then begin 
-				table.(1)  <-  table.(1) + 1; 
-				table.(7) <- table.(7) + Char.code ( qualities.[!pos] );
-				incr pos
-				end;
-		if (c="C") then begin 
-				table.(2)  <-  table.(2) + 1; 
-				table.(7) <- table.(7) + Char.code ( qualities.[!pos] );
-				incr pos
-				end;
-		if (c="G") then begin 
-				table.(3)  <-  table.(3) + 1; 
-				table.(7) <- table.(7) + Char.code ( qualities.[!pos] );
-				incr pos
-				end;
-		if (c="T")  then begin 
-				table.(4) <- table.(4) + 1; 
-				table.(7) <- table.(7) + Char.code ( qualities.[!pos] );
-				incr pos
-				end;
-		if (c="N")  then begin 
-				table.(5) <- table.(5) + 1 ;
-				table.(7) <- table.(7) + Char.code ( qualities.[!pos] );
-				incr pos
-				end;
-		if (c="." || c = ",") then begin 
-				table.(0) <- table.(0) + 1; 
-				table.(6) <- table.(6) + Char.code ( qualities.[!pos] );
-				incr pos
-				end;
-		if (c="$") then raise Next;
+                if (Hashtbl.mem symbols c) then
+		let index1 = fst ( Hashtbl.find symbols c )
+                and index2 = snd ( Hashtbl.find symbols c  ) in
+                 begin
+                 table.(index1)  <- table.(index1) +1 ;
+		 table.(index2)  <- table.(index2) + Char.code ( qualities.[!pos] ) ;
+		 incr pos ;
+                 end;
+		if (c="$") then raise Next; (* end of read *)
 		if (c="^") then begin incr i; raise Next end; 
+                (* ^ followed by quality marks the beginning of a read *)  
 		incr i	
 		with Next -> begin incr i end;
 	done;
@@ -440,7 +438,8 @@ let _ =
 		value of k; I do it only once per row as opposed to 100 times *)
 		let binomial1 = first_binomial na nchr g er ea 
 		in 
-	  	let [|ps;fs|] = compute_ps_fs div binomial1 prob_k_f prior nchr in 
+	  	let  m = compute_ps_fs div binomial1 prob_k_f prior nchr in
+                let ps=m.(0)  and fs=m.(1) in
 		(* output fields :
 			chr pos ref nr na
 			qref qalt genotype 1-p(0) p(1) E(f)
