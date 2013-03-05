@@ -49,17 +49,17 @@ let binomial_table=
 
 (* table for pileup parsing *)
 let symbols = Hashtbl.create 7;;
-Hashtbl.add symbols "A" ( 1,7 );;
-Hashtbl.add symbols "C" ( 2,7 );;
-Hashtbl.add symbols "G" ( 3,7 );;
-Hashtbl.add symbols "T" ( 4,7 );;
-Hashtbl.add symbols "N" ( 5,7 );;
-Hashtbl.add symbols "." ( 0,6 );;
-Hashtbl.add symbols "," ( 0,6 );;
+Hashtbl.add symbols "A" ( 1 , 7 );;
+Hashtbl.add symbols "C" ( 2 , 8 );;
+Hashtbl.add symbols "G" ( 3 , 9 );;
+Hashtbl.add symbols "T" ( 4 , 10 );;
+Hashtbl.add symbols "N" ( 5 , 11 );;
+Hashtbl.add symbols "." ( 0 , 6 );;
+Hashtbl.add symbols "," ( 0 , 6 );;
 
 (*
 rows indexed by k (which can go from 0 to nchr), columns by f 
-stores: (n chhose k) p^k (1-p)^(n-k)
+stores: (n choose k) p^k (1-p)^(n-k)
 *)
 
 let prob_k_f = Array.init 1000 (function i -> Array.create 101 0.0)
@@ -162,6 +162,7 @@ in the pileup
     epsilon_list  epsilon_list[0] quality of the ref
                          epsilon_list[1] quality of the alt
 *)
+
 let pk ( k:int ) ( n:int ) ( er:float ) ( ea:float )  =
     if (k>n) then  raise (Continue("pk::k>n"));
     let er = if ( er > 0.5 ) then 0.5 else er 
@@ -189,8 +190,10 @@ let first_binomial  (na:int)  (n:int) (g:int)  (er:float) (ea:float)  =
 	probs
 ;;
 
-(* reader: I know that below I am using a sloppy way of comparing
-float numbers. It happens to work in this specific occasion *)
+(* 
+reader: I know that below I am using a sloppy way of comparing
+float numbers. It happens to work in this specific occasion 
+*)
 
 let prior_unfolded_informative (theta:float) (beta:float) (bigd:float) (f:float) =
 	match f with
@@ -250,7 +253,7 @@ let fields line =
 ;;
 
 let parse_pileup pileup qualities =
-	let table = Array.init 8 (fun e -> 0) in
+	let table = Array.init 12 (fun e -> 0) in
 	(* table contains the following fields:
 	0 number (#) of '.' or ',' characters (reference)
 	1 #A
@@ -259,7 +262,11 @@ let parse_pileup pileup qualities =
 	4 #T	
 	5 #N
 	6 sum of the quality codes for reference symbols
-	7 sum of quality codes for non reference symbols
+	7 sum of quality codes for A
+        8 sum of quality codes for C
+        9 sum of quality codes for G
+        10 sum of quality codes for T
+        11 sum of quality codes for N
 	*)
 	let le = String.length pileup in
 	if (le = 0) then raise (Continue "empty pileup");
@@ -317,6 +324,8 @@ let parsecmdline () =
 ;;
 
 let decode_genotype unsorted refc sorted =
+        (* calls the genotype looking at the two most frequent nucleotides.
+        Badly done, to be replaced by SNAPE model *)
 	(* 
 	transfer unsorted in an array, as I have to change
 	it in place 
@@ -325,13 +334,13 @@ let decode_genotype unsorted refc sorted =
 	let copy_unsorted = Array.copy (Array.of_list unsorted) in
 	(* first allele *)
 	let first = List.nth sorted 0 
-	and letters = [|refc;"A";"C";"G";"T"|] in 
+	and letters = [| refc;"A";"C";"G";"T" |] in 
 	let i = ref 0 in
 	try
-	while !i<= (List.length unsorted - 1) do
-		if (first >0 && first = copy_unsorted.(!i)) then 
+	while !i <= ( List.length unsorted - 1 ) do
+		if ( first > 0 && first = copy_unsorted.(!i) ) then 
 		begin
-			copy_unsorted.(!i)<- -1; 
+			copy_unsorted.(!i) <- -1; 
 			raise Exit
 		end;
 		incr i
@@ -343,16 +352,18 @@ let decode_genotype unsorted refc sorted =
 	let second =  List.nth sorted 1 in
 	if (second = 0) then !genotype else  
 	try
-	while !i<= (List.length unsorted - 1) do
-		if (second >0 && second = copy_unsorted.(!i)) then 
+	while !i <= (List.length unsorted - 1) do
+		if ( second >0 && second = copy_unsorted.(!i) ) then 
 		begin
-			copy_unsorted.(!i)<- -1; 
+			copy_unsorted.(!i) <- -1; 
 			raise Exit
 		end;
 		incr i
 	done;
 	!genotype
-	with Exit -> begin genotype :=!genotype^letters.(!i) end;
+	with Exit -> begin 
+            genotype :=!genotype^letters.(!i) 
+            end;
 	!genotype
 ;;
 
@@ -416,12 +427,17 @@ let _ =
 		in let sorted_nuc = List.sort (fun x y -> - compare x y) nuc in
 		let genotype = decode_genotype nuc refc sorted_nuc
 		in 
-		if ((nr = List.nth sorted_nuc 2) && (String.length genotype =2 ) ) then begin
+		if ( ( nr = List.nth sorted_nuc 2 ) && 
+                    ( String.length genotype = 2 ) ) 
+                then 
+                begin
 			Printf.fprintf stdout "%s\t%s\t%s\t*\n" chr pos refc;
 			raise (Continue "reference could be wrong")
 		end;
 		let qref = (if (nr>0) then (table.(6) / nr) else 0) 
-		and qalt = (if (na>0) then (table.(7) / na)  else 0) in
+		and sum_q_non_ref = Array.fold_left (+) 0  ( Array.sub table 7 5 ) 
+                in
+                let qalt = ( if ( na > 0 ) then ( sum_q_non_ref / na )  else 0 ) in
         if (na > 0 && qalt < 37) then
             begin 
             let skip_msg=
