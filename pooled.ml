@@ -274,16 +274,17 @@ let parse_pileup pileup qualities =
         while (!i < le) do
 		try (* exception Next *)
 		let c = String.uppercase (String.sub pileup !i 1) in
-                if (Hashtbl.mem symbols c) then
-		let index1 = fst ( Hashtbl.find symbols c )
-                and index2 = snd ( Hashtbl.find symbols c  ) in
-                 begin
-                 table.(index1)  <- table.(index1) +1 ;
-		 table.(index2)  <- table.(index2) + Char.code ( qualities.[!pos] ) ;
-		 incr pos ;
-                 end;
+                if (Hashtbl.mem symbols c) then begin
+		    let index1 = fst ( Hashtbl.find symbols c )
+                    and index2 = snd ( Hashtbl.find symbols c  ) in
+                    begin
+                        table.(index1)  <- table.(index1) +1 ;
+		        table.(index2)  <- table.(index2) + Char.code ( qualities.[!pos] ) ;
+		        incr pos ; 
+                    end;
+                end;
 		if (c="$") then raise Next; (* end of read *)
-		if (c="^") then begin incr i; raise Next end; 
+		if (c="^") then begin  incr i; raise Next end; 
                 (* ^ followed by quality marks the beginning of a read *)  
 		incr i	
 		with Next -> begin incr i end;
