@@ -1,0 +1,9 @@
+chr1	10003	a	1	.	@
+chr1	10004	c	1	.	F
+chr1	10005	c	2	.^A.	FC
+chr1	10006	c	2	..	FC
+chr1	10007	t	3	..^0.	FF@
+chr1	10008	a	3	...	FF@
+chr1	10009	a	3	...	HFF
+chr1	10010	c	3	...	HFF
+chr1	10011	c	3	.-2CT..	GFD
